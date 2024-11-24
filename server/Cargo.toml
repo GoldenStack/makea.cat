@@ -1,0 +1,13 @@
+[package]
+name = "makea-cat"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.93"
+axum = "0.7.9"
+lyon_geom = "1.0.6"
+png = "0.17.14"
+rand = "0.8.5"
+raqote = "0.8.5"
+tokio = { version = "1.41.1", features = ["full"] }
