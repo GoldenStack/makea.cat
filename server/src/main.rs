@@ -1,10 +1,11 @@
 
 use core::f32;
-use std::{f32::consts::PI, io::BufWriter, sync::OnceLock};
+use std::{io::BufWriter, sync::OnceLock};
 
 use anyhow::Result;
-use axum::{body::Body, http::{header::CONTENT_TYPE, Request, StatusCode}, response::{IntoResponse, Redirect}, routing::get, Router};
-use lyon_geom::{euclid::Transform2D, Angle, Arc};
+use axum::{body::Body, http::{header::CONTENT_TYPE, Request, StatusCode}, routing::get, Router};
+use font_kit::handle::Handle;
+use lyon_geom::{euclid::Transform2D, Angle, Arc, Point};
 use rand::Rng;
 use raqote::*;
 
@@ -13,33 +14,28 @@ pub const URL: &str = "http://localhost:1474";
 #[tokio::main]
 async fn main() -> Result<()> {
 
-    let cat = || async move {
+    let paidcat = |request: Request<Body>| async move {
 
-        let mut rng = rand::thread_rng();
-
-        let mut dt = DrawTarget::new(400, 256);
-
-        let base_transform = Transform2D::identity()
-            .then_scale(1.1 + rng.gen_range(-0.02..0.02), 1.1 + rng.gen_range(-0.02..0.02))
-            .then_rotate(Angle::degrees(rng.gen_range(0.0..360.0)))
-            .then_translate(Vector::new(
-                195. + rng.gen_range(-70.0..70.0),
-                124. + rng.gen_range(-45.0..45.0),
-            ));
-
-        draw_cat(&mut dt, &base_transform);
-
-        let png = canvas_to_png(dt).unwrap_or_else(|_| Vec::new());
+        // let uri = request.uri().query();
 
         (
             StatusCode::OK,
             [(CONTENT_TYPE, "image/png")],
-            png
+            out_of_stock()
+        )
+    };
+
+    let freecat = || async move {
+        (
+            StatusCode::OK,
+            [(CONTENT_TYPE, "image/png")],
+            purchase_cat()
         )
     };
 
     let app = Router::new()
-        .route("/cat", get(cat));
+        .route("/cat", get(paidcat))
+        .route("/freecat", get(freecat));
         // .fallback(get(routes::error404()));
 
     // port 1474 is the port for my previous project plus one
@@ -51,6 +47,54 @@ async fn main() -> Result<()> {
     axum::serve(listener, app).await.unwrap();
 
     Ok(())
+}
+
+fn out_of_stock() -> Vec<u8> {
+    let mut dt = DrawTarget::new(400, 256);
+
+    static FONT: OnceLock<Handle> = OnceLock::new();
+    let font = FONT.get_or_init(|| {
+        SystemSource::new()
+        .select_by_postscript_name("DejaVuSans").unwrap()
+    });
+
+    let mut rng = rand::thread_rng();
+
+    let (text, x, y) = if rng.gen_bool(0.5) {
+        (
+            "come back at 2:22",
+            rng.gen_range(8.0..194.0),
+            rng.gen_range(25.0..248.0),
+        )
+    } else {
+        (
+            "torna a 2:22",
+            rng.gen_range(8.0..260.0),
+            rng.gen_range(25.0..248.0),
+        )
+    };
+
+    dt.draw_text(&font.load().unwrap(), 24., text, Point::new(x, y), &BLACK, &DRAW);
+
+    canvas_to_png(dt).unwrap_or_else(|_| Vec::new())
+}
+
+fn purchase_cat() -> Vec<u8> {
+    let mut rng = rand::thread_rng();
+
+    let mut dt = DrawTarget::new(400, 256);
+
+    let base_transform = Transform2D::identity()
+        .then_scale(1.1 + rng.gen_range(-0.02..0.02), 1.1 + rng.gen_range(-0.02..0.02))
+        .then_rotate(Angle::degrees(rng.gen_range(0.0..360.0)))
+        .then_translate(Vector::new(
+            195. + rng.gen_range(-70.0..70.0),
+            124. + rng.gen_range(-45.0..45.0),
+        ));
+
+    draw_cat(&mut dt, &base_transform);
+
+    canvas_to_png(dt).unwrap_or_else(|_| Vec::new())
 }
 
 fn draw_head(dt: &mut DrawTarget) {

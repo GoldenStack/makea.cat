@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.93"
-axum = "0.7.9"
+axum = { version = "0.7.9", features = ["query"] }
+font-kit = "0.14.2"
 lyon_geom = "1.0.6"
 png = "0.17.14"
 rand = "0.8.5"
