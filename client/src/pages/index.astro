@@ -18,7 +18,8 @@
         let d = new Date();
         let h = d.getHours(), m = d.getMinutes();
 
-        let t = (h == 2 || h == 2 + 12) && m == 22;
+        let t = (h == 2 || h == 2 + 12) && m == 26 || true;
+        console.log(h, m, t);
 
         let img = document.createElement("img");
         img.src = "https://makeacat.meow.i.ng/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
