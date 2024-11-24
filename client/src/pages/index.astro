@@ -5,10 +5,8 @@
     </head>
     <body id="bg">
         <p>make a cat / fer un gat</p>
-        <canvas id="cta">
-
-        </canvas>
-        <br>
+        <div id="cta">
+        </div>
         <p>come back at 2:22 / torna a 2:22</p>
     </body>
     <script>
@@ -16,6 +14,14 @@
 		let randomColor = () => `rgb(${rng()}, ${rng()}, ${rng()})`;
 
         document.getElementById("bg").style.backgroundColor = randomColor();
+
+        let d = new Date();
+        let h = d.getHours(), m = d.getMinutes();
+        if ((h == 2 || h == 2 + 12) && m == 22) {
+            let img = document.createElement("img");
+            img.src = `https://makeacat.meow.i.ng/cat?${d.getTime()}&${d.getTimezoneOffset()}`;
+            document.getElementById("cta").appendChild(img);
+        }
     </script>
 </html>
 
