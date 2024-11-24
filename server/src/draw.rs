@@ -56,12 +56,14 @@ pub fn purchase_cat() -> Vec<u8> {
 }
 
 fn draw_head(dt: &mut DrawTarget) {
+    let mut rng = rand::thread_rng();
+
     let ears = {
         let mut pb = PathBuilder::new();
 
         let points = (
             (6., -25.),
-            (21., -36.),
+            (21. + rng.gen_range(-2.0..2.0), -36. + rng.gen_range(-2.0..2.0)),
             (21., -17.)
         );
 
@@ -88,8 +90,11 @@ fn draw_head(dt: &mut DrawTarget) {
 
     let eyes = {
         let mut pb = PathBuilder::new();
-        ellipse(&mut pb, 9., -7., 3., 3.);
-        ellipse(&mut pb, -9., -7., 3., 3.);
+
+        let r = rng.gen_range(2.7..3.3);
+
+        ellipse(&mut pb, 9., -7., r, r);
+        ellipse(&mut pb, -9., -7., r, r);
         pb.close();
 
         pb.finish()
@@ -98,12 +103,12 @@ fn draw_head(dt: &mut DrawTarget) {
     let nose = {
         let mut pb = PathBuilder::new();
 
-        let p_x = 5.;
+        let p_x = 4. + rng.gen_range(0.5..1.5);
         let p_y = 5.;
-        let c_x = 10.;
+        let c_x = 9. + rng.gen_range(0.5..1.5);
         let c_y = -3.;
         let b_x = 1.;
-        let b_y = 10.;
+        let b_y = 9. + rng.gen_range(0.5..1.5);
         
         pb.move_to(-p_x, p_y);
         pb.cubic_to(-c_x, c_y, c_x, c_y, p_x, p_y);
@@ -157,7 +162,10 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
 
     let neck = {
         let mut pb = PathBuilder::new();
-        pb.rect(-15., -15., 30., 30.);
+
+        let r = rng.gen_range(11.0..16.0);
+
+        pb.rect(-r, -r, r*2., r*2.);
         pb.close();
 
         pb.finish()
@@ -165,7 +173,7 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
 
     let body = {
         let mut pb = PathBuilder::new();
-        ellipse(&mut pb, 0., 0., 60., 27.);
+        ellipse(&mut pb, 0., 0., rng.gen_range(55.0..66.0), rng.gen_range(25.0..30.0));
         pb.close();
 
         pb.finish()
@@ -174,7 +182,7 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
     let leg = {
         let mut pb = PathBuilder::new();
 
-        ellipse(&mut pb, 0., 0., 7., 25.);
+        ellipse(&mut pb, 0., 0., rng.gen_range(6.0..8.0), rng.gen_range(23.0..28.0));
 
         pb.finish()
     };
