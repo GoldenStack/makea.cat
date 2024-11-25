@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/cat", get(paidcat))
-        .route("/freecat", get(freecat));
+        .route("/discountcat", get(freecat));
         // .fallback(get(routes::error404()));
 
     // port 1474 is the port for my previous project plus one
