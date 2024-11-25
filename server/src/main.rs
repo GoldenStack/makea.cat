@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{sync::OnceLock, time::Instant};
 
 use anyhow::Result;
 use axum::{body::Body, http::{header::CONTENT_TYPE, HeaderName, Request, StatusCode}, routing::get, Router};
@@ -92,8 +92,8 @@ pub fn verify_time(time: i64, offset: i64) -> bool {
     let now = Utc::now();
 
     // The client must have a valid offset
-    if offset % 15 != 0 || offset.abs() > 12 * 60 {
-        debug!("Offset {offset} is not multiple of 15 or not in [-720, 720]");
+    if !valid_time_offsets().contains(&offset) {
+        debug!("Offset {offset} not in IANA time zone database");
         return false;
     }
 
@@ -133,4 +133,29 @@ pub fn verify_time(time: i64, offset: i64) -> bool {
 
     // Must be good!
     true
+}
+
+fn valid_time_offsets() -> &'static Vec<i64> {
+    static OFFSETS: OnceLock<Vec<i64>> = OnceLock::new();
+    OFFSETS.get_or_init(|| {
+        let zones = include_str!("../time-zones.txt");
+
+        zones.lines().map(|line| {
+            let (sign, line) = line.split_at(1);
+            let (hour, minute) = line.split_once(":").unwrap();
+
+            let sign = match sign {
+                "+" => 1,
+                "-" => -1,
+                c => panic!("Found invalid sign {c} while parsing line"),
+            };
+
+            let hour = hour.parse::<i64>().unwrap();
+            let minute = minute.parse::<i64>().unwrap();
+
+            // Multiply -1 because offsets are negated;
+            // e.g. offset for UTC-06:00 is 360.
+            -1 * sign * (hour * 60 + minute)
+        }).collect::<Vec<_>>()
+    })
 }
