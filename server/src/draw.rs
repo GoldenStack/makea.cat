@@ -42,9 +42,11 @@ pub fn purchase_cat() -> Vec<u8> {
 
     let mut dt = DrawTarget::new(400, 256);
 
+    let rotation = rng.gen_range(0.0..180.0) + rng.gen_range(0.0..180.0) - 180.0;
+
     let base_transform = Transform2D::identity()
         .then_scale(1.1 + rng.gen_range(-0.02..0.02), 1.1 + rng.gen_range(-0.02..0.02))
-        .then_rotate(Angle::degrees(rng.gen_range(0.0..360.0)))
+        .then_rotate(Angle::degrees(rotation))
         .then_translate(Vector::new(
             195. + rng.gen_range(-70.0..70.0),
             124. + rng.gen_range(-45.0..45.0),
