@@ -1,6 +1,9 @@
+use std::time::Instant;
+
 use anyhow::Result;
-use axum::{body::Body, http::{header::CONTENT_TYPE, Request, StatusCode}, routing::get, Router};
+use axum::{body::Body, http::{header::CONTENT_TYPE, HeaderName, Request, StatusCode}, routing::get, Router};
 use chrono::{DateTime, Timelike, Utc};
+use log::{warn, info, debug};
 
 pub mod draw;
 
@@ -12,41 +15,44 @@ const CLIENT_LEEWAY: u32 = 1;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    
+    env_logger::builder()
+        .format_target(false)
+        .init();
 
     let paidcat = |request: Request<Body>| async move {
 
         let query = request.uri().query();
-        
-        let parts = query.and_then(|t| t.split_once("&"));
-
-        let allowed = parts
+        let parts = query.and_then(|t| t.split_once("&"))
             .and_then(|(time, offset)| {
                 let time = time.parse::<i64>().ok()?;
                 let offset = offset.parse::<i64>().ok()?;
 
                 Some((time, offset))
-            }).filter(|(time, offset)| verify_time(*time, *offset))
-            .is_some();
+            });
 
-        let image = if allowed {
-            draw::purchase_cat()
-        } else {
-            draw::out_of_stock()
+        let Some((time, offset)) = parts else {
+            info!("Bad URI query {}", query.map(|q| format!("'{q}'")).unwrap_or("N/A".into()));
+            return out_of_stock();
         };
+
+        if !verify_time(time, offset) {
+            info!("Bad time {time} and offset {offset}");
+            return out_of_stock();
+        }
+
+        let t = Instant::now();
         
-        (
-            StatusCode::OK,
-            [(CONTENT_TYPE, "image/png")],
-            image,
-        )
+        let image = purchase_cat();
+
+        info!("Made cat for time {time} and offset {offset} in {:?}", t.elapsed());
+        
+        image
     };
 
     let freecat = || async move {
-        (
-            StatusCode::OK,
-            [(CONTENT_TYPE, "image/png")],
-            draw::purchase_cat()
-        )
+        warn!("Free cat endpoint was hit - giving away a free cat!");
+        purchase_cat()
     };
 
     let app = Router::new()
@@ -59,10 +65,26 @@ async fn main() -> Result<()> {
         .await
         .unwrap();
 
-    println!("unfortunately we are listening on {}", listener.local_addr().unwrap());
+    info!("unfortunately we are listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 
     Ok(())
+}
+
+pub fn purchase_cat() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
+    (
+        StatusCode::OK,
+        [(CONTENT_TYPE, "image/png")],
+        draw::purchase_cat(),
+    )
+}
+
+pub fn out_of_stock() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
+    (
+        StatusCode::OK,
+        [(CONTENT_TYPE, "image/png")],
+        draw::out_of_stock()
+    )
 }
 
 pub fn verify_time(time: i64, offset: i64) -> bool {
@@ -71,29 +93,31 @@ pub fn verify_time(time: i64, offset: i64) -> bool {
 
     // The client must have a valid offset
     if offset % 15 != 0 || offset.abs() > 12 * 60 {
+        debug!("Offset {offset} is not multiple of 15 or not in [-720, 720]");
         return false;
     }
 
     // The client cannot be too desynced (here we chose 15s)
     if now.timestamp_millis().abs_diff(time) > 15_000 {
+        debug!("Client system time {time} drifts too much ({}ms > 15000ms)", now.timestamp_millis().abs_diff(time));
         return false;
     }
 
     // Make sure the client has a valid date
     let Some(n) = DateTime::from_timestamp_millis(time - offset * 60 * 1000) else {
+        debug!("Could not construct date for ms {} with time {time} and offset {offset}", time - offset * 60 * 1000);
         return false;
     };
 
     // The client must actually think it's 2:22
     if !(n.hour12().1 == HOUR && n.minute() == MINUTE) {
+        debug!("Client thinks it's {}:{} instead of {HOUR}:{MINUTE}", n.hour12().1, n.minute());
         return false;
     }
 
     // The secret sauce: verify that it's valid cat time somewhere.
-    let now = Utc::now();
     let min = now.minute() % DATETIME_GRANULARITY;
     let sec = now.second();
-
  
     let min_before = (min - 1) % DATETIME_GRANULARITY;
     let min_after = (min + 1) % DATETIME_GRANULARITY;
@@ -103,6 +127,7 @@ pub fn verify_time(time: i64, offset: i64) -> bool {
         || (min == min_after && sec < CLIENT_LEEWAY);
 
     if !valid_on_server {
+        debug!("It's not {HOUR}:{MINUTE} anywhere");
         return false;
     }
 
