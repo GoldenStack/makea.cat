@@ -9,7 +9,7 @@ use rand::Rng;
 pub mod draw;
 
 const HOUR: u32 = 2; // 12-hour time
-const MINUTE: u32 = 22;
+const MINUTE: u32 = 47;
 
 const CLIENT_LEEWAY: i64 = 1;
 
@@ -22,24 +22,23 @@ async fn main() -> Result<()> {
 
     let index = || async move {
 
-        let index = include_str!("../public/index.html");
-
         let mut rng = rand::thread_rng();
-
-        let index = index.replace("{{ BACKGROUND-COLOR }}", &format!("{},{},{}",
-            rng.gen_range(100..=255),
-            rng.gen_range(100..=255),
-            rng.gen_range(100..=255),
-        ));
-
         let now = Utc::now();
-
         let valid = valid_time_offsets().iter().any(|&offset| valid_time_in_zone(now, offset));
 
-        let js = concat!("<script>", include_str!("../public/main.js"), "</script>");
+        let background = format!("{},{},{}",
+            rng.gen_range(100..=255),
+            rng.gen_range(100..=255),
+            rng.gen_range(100..=255),
+        );
 
-        let index = index.replace("{{ IMAGE_SRC }}", if valid { "" } else { "/cat?torna" });
-        let index = index.replace("{{ JAVASCRIPT }}", if valid { js } else { "" });
+        let image_src = if valid { "" } else { "/cat?torna" };
+
+        let hour12 = HOUR + 12;
+        let js = format!(r#"<script>let a=new Date(),b=a.getHours(),c=a.getMinutes();document.getElementById("a").src="/cat?"+((b=={HOUR}||b=={hour12})&&c=={MINUTE}?a.getTime()+"&"+a.getTimezoneOffset():"torna");</script>"#);
+        let javascript = if valid { &js } else { "" };
+
+        let index = format!(r#"<!DOCTYPE html><html><head><title>makea.cat</title></head><body style="text-align:center;background-color:rgb({background});"><p>make a cat / fer un gat</p><div style="margin:0 auto;width:400px;height:256px;border:1px solid #000"><img src="{image_src}"id="a"></div><p>come back at {HOUR}:{MINUTE:0>2} / torna a {HOUR}:{MINUTE:0>2}</p>{javascript}</body></html>"#);
 
         (
             StatusCode::OK,

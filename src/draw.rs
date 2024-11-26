@@ -7,6 +7,8 @@ use lyon_geom::{euclid::Transform2D, Angle, Arc, Point};
 use rand::Rng;
 use raqote::*;
 
+use crate::{HOUR, MINUTE};
+
 pub fn out_of_stock() -> Vec<u8> {
     let mut dt = DrawTarget::new(400, 256);
 
@@ -20,19 +22,19 @@ pub fn out_of_stock() -> Vec<u8> {
 
     let (text, x, y) = if rng.gen_bool(0.5) {
         (
-            "come back at 2:22",
+            format!("come back at {HOUR}:{MINUTE:0>2}"),
             rng.gen_range(8.0..194.0),
             rng.gen_range(25.0..248.0),
         )
     } else {
         (
-            "torna a 2:22",
+            format!("torna a {HOUR}:{MINUTE:0>2}"),
             rng.gen_range(8.0..260.0),
             rng.gen_range(25.0..248.0),
         )
     };
 
-    dt.draw_text(&font.load().unwrap(), 24., text, Point::new(x, y), &BLACK, &DRAW);
+    dt.draw_text(&font.load().unwrap(), 24., &text, Point::new(x, y), &BLACK, &DRAW);
 
     canvas_to_png(dt).unwrap_or_else(|_| Vec::new())
 }
