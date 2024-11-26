@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
 
         let valid = valid_time_offsets().iter().any(|&offset| valid_time_in_zone(now, offset));
 
-        let js = r#"<script>let a=new Date();let b=a.getHours(),c=a.getMinutes();document.getElementById("img").src="/cat?"+((b==2||b==2+12)&&c==22?`${a.getTime()}&${a.getTimezoneOffset()}`:"torna");</script>"#;
+        let js = concat!("<script>", include_str!("../public/main.js"), "</script>");
 
         let index = index.replace("{{ IMAGE_SRC }}", if valid { "" } else { "/cat?torna" });
         let index = index.replace("{{ JAVASCRIPT }}", if valid { js } else { "" });

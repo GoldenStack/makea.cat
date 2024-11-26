@@ -1,0 +1,1 @@
+let a=new Date();let b=a.getHours(),c=a.getMinutes();document.getElementById("img").src="/cat?"+((b==2||b==2+12)&&c==22?`${a.getTime()}&${a.getTimezoneOffset()}`:"torna");
