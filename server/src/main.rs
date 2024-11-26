@@ -2,7 +2,7 @@ use std::{sync::OnceLock, time::Instant};
 
 use anyhow::Result;
 use axum::{body::Body, http::{header::CONTENT_TYPE, HeaderName, Request, StatusCode}, routing::get, Router};
-use chrono::{DateTime, Timelike, Utc};
+use chrono::{DateTime, TimeDelta, Timelike, Utc};
 use log::{warn, info, debug};
 
 pub mod draw;
@@ -10,12 +10,11 @@ pub mod draw;
 const HOUR: u32 = 2; // 12-hour time
 const MINUTE: u32 = 22;
 
-const DATETIME_GRANULARITY: u32 = 30;
-const CLIENT_LEEWAY: u32 = 1;
+const CLIENT_LEEWAY: i64 = 1;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    
+
     env_logger::builder()
         .format_target(false)
         .init();
@@ -36,7 +35,7 @@ async fn main() -> Result<()> {
             return out_of_stock();
         };
 
-        if !verify_time(time, offset) {
+        if !verify_time(time, offset).is_some() {
             info!("Bad time {time} and offset {offset}");
             return out_of_stock();
         }
@@ -87,52 +86,47 @@ pub fn out_of_stock() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) 
     )
 }
 
-pub fn verify_time(time: i64, offset: i64) -> bool {
+pub fn verify_time(time: i64, offset: i64) -> Option<()> {
 
     let now = Utc::now();
 
-    // The client must have a valid offset
+    // The client must have an offset that corresponds to a valid time zone
     if !valid_time_offsets().contains(&offset) {
         debug!("Offset {offset} not in IANA time zone database");
-        return false;
+        return None;
     }
+
+    let offset = TimeDelta::try_minutes(offset)?;
+    let local = now.checked_sub_signed(offset)?;
+
+    let diff = TimeDelta::min(
+        (local.with_hour(HOUR)?.with_minute(MINUTE)?.with_second(30)? - local).abs(),
+        (local.with_hour(12 + HOUR)?.with_minute(MINUTE)?.with_second(30)? - local).abs(),
+    );
+    
+    // Make sure the local time is actually valid
+    if diff > TimeDelta::try_seconds(30 + CLIENT_LEEWAY)? {
+        debug!("Not {HOUR}:{MINUTE:0>2} in time offset {offset}");
+        return None;
+    }
+
+    // Client time checks
 
     // The client cannot be too desynced (here we chose 15s)
     if now.timestamp_millis().abs_diff(time) > 15_000 {
         debug!("Client system time {time} drifts too much ({}ms > 15000ms)", now.timestamp_millis().abs_diff(time));
-        return false;
+        return None;
     }
 
-    // Make sure the client has a valid date
-    let Some(n) = DateTime::from_timestamp_millis(time - offset * 60 * 1000) else {
-        debug!("Could not construct date for ms {} with time {time} and offset {offset}", time - offset * 60 * 1000);
-        return false;
-    };
-
-    // The client must actually think it's 2:22
-    if !(n.hour12().1 == HOUR && n.minute() == MINUTE) {
-        debug!("Client thinks it's {}:{} instead of {HOUR}:{MINUTE}", n.hour12().1, n.minute());
-        return false;
-    }
-
-    // The secret sauce: verify that it's valid cat time somewhere.
-    let min = now.minute() % DATETIME_GRANULARITY;
-    let sec = now.second();
- 
-    let min_before = (min - 1) % DATETIME_GRANULARITY;
-    let min_after = (min + 1) % DATETIME_GRANULARITY;
-
-    let valid_on_server = min == MINUTE % DATETIME_GRANULARITY
-        || (min == min_before && sec >= 60 - CLIENT_LEEWAY)
-        || (min == min_after && sec < CLIENT_LEEWAY);
-
-    if !valid_on_server {
-        debug!("It's not {HOUR}:{MINUTE} anywhere");
-        return false;
+    // Client must think it's actually the correct time
+    let time = DateTime::from_timestamp_millis(time)?.checked_sub_signed(offset)?;
+    if time.hour12().1 != HOUR || time.minute() != MINUTE {
+        debug!("Client thinks it's {}:{:0>2} instead of {HOUR}:{MINUTE:0>2}", time.hour12().1, time.minute());
+        return None;
     }
 
     // Must be good!
-    true
+    Some(())
 }
 
 fn valid_time_offsets() -> &'static Vec<i64> {
