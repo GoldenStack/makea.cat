@@ -32,6 +32,24 @@ async fn main() -> Result<()> {
             rng.gen_range(100..=255),
         ));
 
+        let now = Utc::now();
+
+        let valid = valid_time_offsets().iter().any(|&offset| valid_time_in_zone(now, offset));
+
+        let js = r#"
+        <script> 
+            let d = new Date();
+            let h = d.getHours(), m = d.getMinutes();
+    
+            let t = (h == 2 || h == 2 + 12) && m == 22 || true;
+    
+            document.getElementById("img").src = "/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
+        </script>
+        "#;
+
+        let index = index.replace("{{ IMAGE_SRC }}", if valid { "" } else { "/cat?torna" });
+        let index = index.replace("{{ JAVASCRIPT }}", if valid { js } else { "" });
+
         (
             StatusCode::OK,
             [(CONTENT_TYPE, "text/html")],
@@ -116,16 +134,8 @@ pub fn verify_time(time: i64, offset: i64) -> Option<()> {
         return None;
     }
 
-    let offset = TimeDelta::try_minutes(offset)?;
-    let local = now.checked_sub_signed(offset)?;
-
-    let diff = TimeDelta::min(
-        (local.with_hour(HOUR)?.with_minute(MINUTE)?.with_second(30)? - local).abs(),
-        (local.with_hour(12 + HOUR)?.with_minute(MINUTE)?.with_second(30)? - local).abs(),
-    );
-    
     // Make sure the local time is actually valid
-    if diff > TimeDelta::try_seconds(30 + CLIENT_LEEWAY)? {
+    if !valid_time_in_zone(now, offset) {
         debug!("Not {HOUR}:{MINUTE:0>2} in time offset {offset}");
         return None;
     }
@@ -139,7 +149,7 @@ pub fn verify_time(time: i64, offset: i64) -> Option<()> {
     }
 
     // Client must think it's actually the correct time
-    let time = DateTime::from_timestamp_millis(time)?.checked_sub_signed(offset)?;
+    let time = DateTime::from_timestamp_millis(time)?.checked_sub_signed(TimeDelta::minutes(offset))?;
     if time.hour12().1 != HOUR || time.minute() != MINUTE {
         debug!("Client thinks it's {}:{:0>2} instead of {HOUR}:{MINUTE:0>2}", time.hour12().1, time.minute());
         return None;
@@ -147,6 +157,24 @@ pub fn verify_time(time: i64, offset: i64) -> Option<()> {
 
     // Must be good!
     Some(())
+}
+
+fn valid_time_in_zone(now: DateTime<Utc>, offset: i64) -> bool {
+    (|| {
+        let offset = TimeDelta::try_minutes(offset)?;
+        let time = now.checked_sub_signed(offset)?;
+
+        let delta = TimeDelta::min(
+            (time.with_hour(HOUR)?.with_minute(MINUTE)?.with_second(30)? - time).abs(),
+            (time.with_hour(12 + HOUR)?.with_minute(MINUTE)?.with_second(30)? - time).abs(),
+        );
+
+        if delta <= TimeDelta::try_seconds(30 + CLIENT_LEEWAY)? {
+            Some(())
+        } else {
+            None
+        }
+    })().is_some()
 }
 
 fn valid_time_offsets() -> &'static Vec<i64> {

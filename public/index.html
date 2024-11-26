@@ -14,16 +14,9 @@
         </style>
         <p>make a cat / fer un gat</p>
         <div id="cta">
-            <img src="" id="img">
+            <img src="{{ IMAGE_SRC }}" id="img">
         </div>
         <p>come back at 2:22 / torna a 2:22</p>
-        <script> 
-            let d = new Date();
-            let h = d.getHours(), m = d.getMinutes();
-    
-            let t = (h == 2 || h == 2 + 12) && m == 22 || true;
-    
-            document.getElementById("img").src = "/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
-        </script>
+        {{ JAVASCRIPT }}
     </body>
 </html>
