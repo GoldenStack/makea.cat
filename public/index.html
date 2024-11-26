@@ -3,7 +3,7 @@
     <head>
         <title>makea.cat</title>
     </head>
-    <body style="text-align: center; background-color: rgb(0, 0, 0);">
+    <body style="text-align: center; background-color: rgb({{ BACKGROUND-COLOR }});">
         <style>        
             #cta {
                 margin: 0 auto;
@@ -14,6 +14,7 @@
         </style>
         <p>make a cat / fer un gat</p>
         <div id="cta">
+            <img src="" id="img">
         </div>
         <p>come back at 2:22 / torna a 2:22</p>
         <script> 
@@ -22,9 +23,7 @@
     
             let t = (h == 2 || h == 2 + 12) && m == 22 || true;
     
-            let img = document.createElement("img");
-            img.src = "/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
-            document.getElementById("cta").appendChild(img);
+            document.getElementById("img").src = "/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
         </script>
     </body>
 </html>

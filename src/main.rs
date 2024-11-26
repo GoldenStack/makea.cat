@@ -26,13 +26,11 @@ async fn main() -> Result<()> {
 
         let mut rng = rand::thread_rng();
 
-        let color = format!("background-color: rgb({}, {}, {});",
+        let index = index.replace("{{ BACKGROUND-COLOR }}", &format!("{}, {}, {}",
             rng.gen_range(100..=255),
             rng.gen_range(100..=255),
             rng.gen_range(100..=255),
-        );
-
-        let index = index.replace("background-color: rgb(0, 0, 0);", &color);
+        ));
 
         (
             StatusCode::OK,
