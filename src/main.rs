@@ -8,8 +8,8 @@ use rand::Rng;
 
 pub mod draw;
 
-const HOUR: u32 = 3; // 12-hour time
-const MINUTE: u32 = 45;
+const HOUR: u32 = 2; // 12-hour time
+const MINUTE: u32 = 22;
 
 const CLIENT_LEEWAY: i64 = 1;
 
@@ -30,8 +30,11 @@ async fn main() -> Result<()> {
 
         let image_src = if valid { "" } else { "/cat?torna" };
 
-        let js = format!(r#"<script>a=new Date(),b=a.getHours(),c=a.getMinutes();d.src="/cat?"+(b%12=={HOUR}&c=={MINUTE}?(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",a.getTime()+"&"+a.getTimezoneOffset()):"torna");</script>"#);
-        let javascript = if valid { &js } else { "" };
+        let javascript = if valid {
+            &format!(r#"<script>a=new Date(),b=a.getHours(),c=a.getMinutes();d.src=b%12=={HOUR}&c=={MINUTE}?(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset()):"/torna";</script>"#)
+        } else {
+            ""
+        };
 
         let index = format!(r#"<!DOCTYPE html><html><head><title>makea.cat</title></head><body style="text-align:center;background-color:#{background:x}"><p>make a cat / fer un gat</p><div style="margin:0 auto;width:400px;height:256px;border:1px solid#000"><img src="{image_src}" id="d"></div><p id="e">come back at {HOUR}:{MINUTE:0>2} / torna a {HOUR}:{MINUTE:0>2}</p>{javascript}</body></html>"#);
 
@@ -42,14 +45,19 @@ async fn main() -> Result<()> {
         )
     };
 
-    let freecat = || async move {
+    async fn nocat() -> impl IntoResponse {
+        out_of_stock()
+    }
+
+    async fn freecat() -> impl IntoResponse {
         warn!("Free cat endpoint was hit - giving away a free cat!");
         purchase_cat()
-    };
+    }
 
     let app = Router::new()
         .route("/", get(index))
         .route("/cat", get(verified_cat))
+        .route("/torna", get(nocat))
         .route("/discountcat", get(freecat));
         // .fallback(get(routes::error404()));
 
