@@ -9,7 +9,7 @@ use rand::Rng;
 pub mod draw;
 
 const HOUR: u32 = 2; // 12-hour time
-const MINUTE: u32 = 47;
+const MINUTE: u32 = 22;
 
 const CLIENT_LEEWAY: i64 = 1;
 
@@ -35,10 +35,10 @@ async fn main() -> Result<()> {
         let image_src = if valid { "" } else { "/cat?torna" };
 
         let hour12 = HOUR + 12;
-        let js = format!(r#"<script>let a=new Date(),b=a.getHours(),c=a.getMinutes();document.getElementById("a").src="/cat?"+((b=={HOUR}||b=={hour12})&&c=={MINUTE}?a.getTime()+"&"+a.getTimezoneOffset():"torna");</script>"#);
+        let js = format!(r#"<script>let a=new Date(),b=a.getHours(),c=a.getMinutes(),d=e=>document.getElementById(e);d("a").src="/cat?"+((b=={HOUR}||b=={hour12})&&c=={MINUTE}?(d("b").textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",a.getTime()+"&"+a.getTimezoneOffset()):"torna");</script>"#);
         let javascript = if valid { &js } else { "" };
 
-        let index = format!(r#"<!DOCTYPE html><html><head><title>makea.cat</title></head><body style="text-align:center;background-color:rgb({background});"><p>make a cat / fer un gat</p><div style="margin:0 auto;width:400px;height:256px;border:1px solid #000"><img src="{image_src}"id="a"></div><p>come back at {HOUR}:{MINUTE:0>2} / torna a {HOUR}:{MINUTE:0>2}</p>{javascript}</body></html>"#);
+        let index = format!(r#"<!DOCTYPE html><html><head><title>makea.cat</title></head><body style="text-align:center;background-color:rgb({background});"><p>make a cat / fer un gat</p><div style="margin:0 auto;width:400px;height:256px;border:1px solid #000"><img src="{image_src}" id="a"></div><p id="b">come back at {HOUR}:{MINUTE:0>2} / torna a {HOUR}:{MINUTE:0>2}</p>{javascript}</body></html>"#);
 
         (
             StatusCode::OK,
