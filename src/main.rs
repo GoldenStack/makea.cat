@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
         let image_src = if valid { "" } else { "/cat?torna" };
 
         let javascript = if valid {
-            &format!(r#"<script>a=new Date(),b=a.getHours(),c=a.getMinutes();d.src=b%12=={HOUR}&c=={MINUTE}?(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset()):"/torna";</script>"#)
+            &format!(r#"<script>a=new Date();d.src=a.getHours()%12=={HOUR}&a.getMinutes()=={MINUTE}?(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset()):"/torna";</script>"#)
         } else {
             ""
         };
