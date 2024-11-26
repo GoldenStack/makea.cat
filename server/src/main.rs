@@ -1,7 +1,7 @@
 use std::{sync::OnceLock, time::Instant};
 
 use anyhow::Result;
-use axum::{body::Body, http::{header::CONTENT_TYPE, HeaderName, Request, StatusCode}, routing::get, Router};
+use axum::{body::Body, http::{header::CONTENT_TYPE, HeaderName, Request, StatusCode}, response::IntoResponse, routing::get, Router};
 use chrono::{DateTime, TimeDelta, Timelike, Utc};
 use log::{warn, info, debug};
 
@@ -19,34 +19,12 @@ async fn main() -> Result<()> {
         .format_target(false)
         .init();
 
-    let paidcat = |request: Request<Body>| async move {
-
-        let query = request.uri().query();
-        let parts = query.and_then(|t| t.split_once("&"))
-            .and_then(|(time, offset)| {
-                let time = time.parse::<i64>().ok()?;
-                let offset = offset.parse::<i64>().ok()?;
-
-                Some((time, offset))
-            });
-
-        let Some((time, offset)) = parts else {
-            info!("Bad URI query {}", query.map(|q| format!("'{q}'")).unwrap_or("N/A".into()));
-            return out_of_stock();
-        };
-
-        if !verify_time(time, offset).is_some() {
-            info!("Bad time {time} and offset {offset}");
-            return out_of_stock();
-        }
-
-        let t = Instant::now();
-        
-        let image = purchase_cat();
-
-        info!("Made cat for time {time} and offset {offset} in {:?}", t.elapsed());
-        
-        image
+    let index = || async move {
+        (
+            StatusCode::OK,
+            [(CONTENT_TYPE, "text/html")],
+            include_str!("../public/index.html"),
+        )
     };
 
     let freecat = || async move {
@@ -55,7 +33,8 @@ async fn main() -> Result<()> {
     };
 
     let app = Router::new()
-        .route("/cat", get(paidcat))
+        .route("/", get(index))
+        .route("/cat", get(verified_cat))
         .route("/discountcat", get(freecat));
         // .fallback(get(routes::error404()));
 
@@ -70,7 +49,36 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn purchase_cat() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
+pub async fn verified_cat(request: Request<Body>) -> impl IntoResponse {
+    let query = request.uri().query();
+    let parts = query.and_then(|t| t.split_once("&"))
+        .and_then(|(time, offset)| {
+            let time = time.parse::<i64>().ok()?;
+            let offset = offset.parse::<i64>().ok()?;
+
+            Some((time, offset))
+        });
+
+    let Some((time, offset)) = parts else {
+        info!("Bad URI query {}", query.map(|q| format!("'{q}'")).unwrap_or("N/A".into()));
+        return out_of_stock();
+    };
+
+    if !verify_time(time, offset).is_some() {
+        info!("Bad time {time} and offset {offset}");
+        return out_of_stock();
+    }
+
+    let t = Instant::now();
+    
+    let image = purchase_cat();
+
+    info!("Made cat for time {time} and offset {offset} in {:?}", t.elapsed());
+    
+    image
+}
+
+fn purchase_cat() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
     (
         StatusCode::OK,
         [(CONTENT_TYPE, "image/png")],
@@ -78,7 +86,7 @@ pub fn purchase_cat() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) 
     )
 }
 
-pub fn out_of_stock() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
+fn out_of_stock() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
     (
         StatusCode::OK,
         [(CONTENT_TYPE, "image/png")],
