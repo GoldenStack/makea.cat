@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
 
         let mut rng = rand::thread_rng();
 
-        let index = index.replace("{{ BACKGROUND-COLOR }}", &format!("{}, {}, {}",
+        let index = index.replace("{{ BACKGROUND-COLOR }}", &format!("{},{},{}",
             rng.gen_range(100..=255),
             rng.gen_range(100..=255),
             rng.gen_range(100..=255),
@@ -36,16 +36,7 @@ async fn main() -> Result<()> {
 
         let valid = valid_time_offsets().iter().any(|&offset| valid_time_in_zone(now, offset));
 
-        let js = r#"
-        <script> 
-            let d = new Date();
-            let h = d.getHours(), m = d.getMinutes();
-    
-            let t = (h == 2 || h == 2 + 12) && m == 22 || true;
-    
-            document.getElementById("img").src = "/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
-        </script>
-        "#;
+        let js = r#"<script>let a=new Date();let b=a.getHours(),c=a.getMinutes();document.getElementById("img").src="/cat?"+((b==2||b==2+12)&&c==22?`${a.getTime()}&${a.getTimezoneOffset()}`:"torna");</script>"#;
 
         let index = index.replace("{{ IMAGE_SRC }}", if valid { "" } else { "/cat?torna" });
         let index = index.replace("{{ JAVASCRIPT }}", if valid { js } else { "" });
