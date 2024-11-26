@@ -29,7 +29,7 @@
             let d = new Date();
             let h = d.getHours(), m = d.getMinutes();
     
-            let t = (h == 2 || h == 2 + 12) && m == 22 || true;
+            let t = (h == 2 || h == 2 + 12) && m == 22;
     
             let img = document.createElement("img");
             img.src = "/cat?" + (t ? `${d.getTime()}&${d.getTimezoneOffset()}` : "torna");
