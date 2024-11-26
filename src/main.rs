@@ -4,6 +4,7 @@ use anyhow::Result;
 use axum::{body::Body, http::{header::CONTENT_TYPE, HeaderName, Request, StatusCode}, response::IntoResponse, routing::get, Router};
 use chrono::{DateTime, TimeDelta, Timelike, Utc};
 use log::{warn, info, debug};
+use rand::Rng;
 
 pub mod draw;
 
@@ -20,10 +21,23 @@ async fn main() -> Result<()> {
         .init();
 
     let index = || async move {
+
+        let index = include_str!("../public/index.html");
+
+        let mut rng = rand::thread_rng();
+
+        let color = format!("background-color: rgb({}, {}, {});",
+            rng.gen_range(100..=255),
+            rng.gen_range(100..=255),
+            rng.gen_range(100..=255),
+        );
+
+        let index = index.replace("background-color: rgb(0, 0, 0);", &color);
+
         (
             StatusCode::OK,
             [(CONTENT_TYPE, "text/html")],
-            include_str!("../public/index.html"),
+            index,
         )
     };
 
