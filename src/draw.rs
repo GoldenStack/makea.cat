@@ -144,7 +144,12 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
         let sign = if rng.gen::<bool>() { 1. } else { -1. };
 
         pb.move_to(x, y);
-        if rng.gen::<bool>() {
+        
+        if rng.gen_ratio(1, 20) {
+            let scale = if rng.gen_ratio(1, 10) { 5. }
+                else { 1. };
+            pb.line_to(x + scale*rng.gen_range(40.0..70.0), y + scale*rng.gen_range(-30.0..30.0));
+        } else if rng.gen::<bool>() {
             let scale = rng.gen_range(2.5..3.5);
 
             pb.cubic_to(
