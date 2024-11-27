@@ -28,10 +28,10 @@ async fn main() -> Result<()> {
 
         let background = (rng.gen_range(100..=255u32) << 16) + (rng.gen_range(100..=255) << 8) + (rng.gen_range(100..=255));
 
-        let image_src = if valid { "" } else { "/cat?torna" };
+        let image_src = if valid { "" } else { "/torna" };
 
         let javascript = if valid {
-            &format!(r#"<script>a=new Date();d.src=a.getHours()%12=={HOUR}&a.getMinutes()=={MINUTE}?(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset()):"/torna";</script>"#)
+            &format!(r#"<script>a=new Date();d.src={HOUR}-a.getHours()%12|{MINUTE}-a.getMinutes()?"/torna":(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset());</script>"#)
         } else {
             ""
         };
