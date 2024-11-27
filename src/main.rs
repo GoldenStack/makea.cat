@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
         let background = (rng.gen_range(100..=255u32) << 16) + (rng.gen_range(100..=255) << 8) + (rng.gen_range(100..=255));
 
         let index = if valid {
-            let js = &format!(r#"<script>a=new Date();d.src={HOUR}-a.getHours()%12|{MINUTE}-a.getMinutes()?"/torna":(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset());</script>"#);
+            let js = &format!(r#"<script>a=new Date();d.src={HOUR}-a.getHours()%12|{MINUTE}-a.getMinutes()?"/torna":(e.textContent="{HOUR}:{MINUTE:0>2} make a cat / {HOUR}:{MINUTE:0>2} fer un gat",`/cat?${{a.getTime()}}&`+a.getTimezoneOffset())</script>"#);
 
             format!(r#"<!DOCTYPE html><html><head><title>makea.cat</title></head><body style="text-align:center;background-color:#{background:x}"><p>make a cat / fer un gat</p><div style="margin:0 auto;width:400px;height:256px;border:1px solid#000"><img src="" id="d"></div><p id="e">come back at {HOUR}:{MINUTE:0>2} / torna a {HOUR}:{MINUTE:0>2}</p>{js}</body></html>"#)
         } else {
