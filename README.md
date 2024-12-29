@@ -14,11 +14,11 @@ makea.cat uses [raqote](https://github.com/jrmuizel/raqote), the canvas library 
 
 many text fields on makea.cat include a translation into [catalan](https://govern.cat/gov/). this is because .cat is short for catalunya/catalonia, and .cat domains are required promote the catalan language and culture! i have learned that this is never checked, but i translated it anyway.
 
-don't make fun of my 
+don't make fun of my code ok it's great
 
 ---
 
-NOTE: now that i have somewhat of a platform, please listen to the (unofficial) makea.fish album!!!
+NOTE: now that i have somewhat of a platform, please listen to the (unofficial) makea.fish album!!! i'm not involved with them at all i just really like the album
 
 https://pegasusinn.bandcamp.com/album/makea-fish
 
