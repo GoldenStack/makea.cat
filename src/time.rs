@@ -33,7 +33,7 @@ pub async fn correct_time_for_query(query: Option<&str>) -> bool {
         return false;
     }
 
-    info!("Made cat for time {time} and offset {offset}");
+    info!("Good time {time} and offset {offset}");
     
     true
 }
