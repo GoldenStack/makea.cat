@@ -37,6 +37,9 @@ async fn main() -> Result<()> {
         }))
         .route("/torna", get(|| async move { cat(false) }))
         .route("/discountcat", get(|| async move {
+            // I changed the actual URL for this endpoint on the version I'm hosting.
+            // Don't try to cheat cats in >:3
+        
             warn!("Free cat endpoint was hit - giving away a free cat!");
             cat(true)
         }));
