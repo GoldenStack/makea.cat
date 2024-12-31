@@ -37,6 +37,9 @@ pub fn out_of_stock() -> Vec<u8> {
         )
     };
 
+    // The text can't be rotated because of a bug with raqote.
+    // Hopefully this will change!
+
     dt.draw_text(&font.load().unwrap(), 24., &text, Point::new(x, y), &BLACK, &DRAW);
 
     canvas_to_png(dt).unwrap_or_else(|_| Vec::new())
