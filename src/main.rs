@@ -8,17 +8,22 @@ use rand::Rng;
 
 pub mod draw;
 
-const HOUR: u32 = 2; // 12-hour time
+/// The hour at which cats can be generated.
+/// [HOUR] and [HOUR] + 12 are both allowed hours for the client. 
+const HOUR: u32 = 2;
+
+/// The minute at which cats can be generated.
 const MINUTE: u32 = 22;
 
+/// The number of seconds of leeway for clients that think it's 2:22.
+/// This means cats can technically be generated [CLIENT_LEEWAY] seconds before
+/// and after it's 2:22 somewhere.
 const CLIENT_LEEWAY: i64 = 1;
 
 #[tokio::main]
 async fn main() -> Result<()> {
 
-    env_logger::builder()
-        .format_target(false)
-        .init();
+    env_logger::init();
 
     let index = || async move {
 
@@ -43,20 +48,16 @@ async fn main() -> Result<()> {
         )
     };
 
-    async fn nocat() -> impl IntoResponse {
-        out_of_stock()
-    }
-
-    async fn freecat() -> impl IntoResponse {
-        warn!("Free cat endpoint was hit - giving away a free cat!");
-        purchase_cat()
-    }
-
     let app = Router::new()
         .route("/", get(index))
         .route("/cat", get(verified_cat))
-        .route("/torna", get(nocat))
-        .route("/discountcat", get(freecat));
+        .route("/torna", get(|| async move {
+            ok_png(draw::out_of_stock())
+        }))
+        .route("/discountcat", get(|| async move {
+            warn!("Free cat endpoint was hit - giving away a free cat!");
+            ok_png(draw::purchase_cat())
+        }));
         // .fallback(get(routes::error404()));
 
     // port 1474 is the port for my previous project plus one
@@ -82,39 +83,46 @@ pub async fn verified_cat(request: Request<Body>) -> impl IntoResponse {
 
     let Some((time, offset)) = parts else {
         info!("Bad URI query {}", query.map(|q| format!("'{q}'")).unwrap_or("N/A".into()));
-        return out_of_stock();
+        return ok_png(draw::out_of_stock());
     };
 
     if !verify_time(time, offset).is_some() {
         info!("Bad time {time} and offset {offset}");
-        return out_of_stock();
+        return ok_png(draw::out_of_stock());
     }
 
     let t = Instant::now();
     
-    let image = purchase_cat();
+    let image = ok_png(draw::purchase_cat());
 
     info!("Made cat for time {time} and offset {offset} in {:?}", t.elapsed());
     
     image
 }
 
-fn purchase_cat() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
+fn ok_png(png: Vec<u8>) -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
     (
         StatusCode::OK,
         [(CONTENT_TYPE, "image/png")],
-        draw::purchase_cat(),
+        png
     )
 }
 
-fn out_of_stock() -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
-    (
-        StatusCode::OK,
-        [(CONTENT_TYPE, "image/png")],
-        draw::out_of_stock()
-    )
-}
-
+/// Verifies that the client time and offset are valid. This will perform a few
+/// checks:
+/// - The client must have a valid time zone offset according to the IANA tz
+///   database
+/// - It must be the correct time in the client's time zone (except for a small
+///   [CLIENT_LEEWAY]).
+/// 
+/// There are a few more checks that are technically unnecessary for the
+/// anticheat, but render static URLs useless and make it slightly harder to
+/// reverse engineer:
+/// - The client's time cannot have more than 15 seconds of drift from the
+///   actual time
+/// - The client's time, taking offset into account, must actually be the
+///   correct time for them (no leeway here, because this is what the client
+///   thinks).
 pub fn verify_time(time: i64, offset: i64) -> Option<()> {
 
     let now = Utc::now();
@@ -150,6 +158,12 @@ pub fn verify_time(time: i64, offset: i64) -> Option<()> {
     Some(())
 }
 
+/// Returns whether or not the provided date has the correct [HOUR] and [MINUTE]
+/// in the given time zone offset. This will allow a leeway of [CLIENT_LEEWAY]
+/// in either direction.
+/// 
+/// Failure of operations involving time is considered an invalid date and will
+/// return false.
 fn valid_time_in_zone(now: DateTime<Utc>, offset: i64) -> bool {
     (|| {
         let offset = TimeDelta::try_minutes(offset)?;
@@ -168,6 +182,9 @@ fn valid_time_in_zone(now: DateTime<Utc>, offset: i64) -> bool {
     })().is_some()
 }
 
+/// Returns the list of every valid time zone offset, per the time zone list.
+/// This will panic on most errors because it's meant to run once and is not
+/// some core function that requires incredible reliability.
 fn valid_time_offsets() -> &'static Vec<i64> {
     static OFFSETS: OnceLock<Vec<i64>> = OnceLock::new();
     OFFSETS.get_or_init(|| {
