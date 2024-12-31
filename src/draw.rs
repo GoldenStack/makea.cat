@@ -9,9 +9,11 @@ use raqote::*;
 
 use crate::{HOUR, MINUTE};
 
+/// Draws the "come back at 2:22" text, returning a PNG.
 pub fn out_of_stock() -> Vec<u8> {
     let mut dt = DrawTarget::new(400, 256);
 
+    // Get the font
     static FONT: OnceLock<Handle> = OnceLock::new();
     let font = FONT.get_or_init(|| {
         SystemSource::new()
@@ -20,8 +22,9 @@ pub fn out_of_stock() -> Vec<u8> {
 
     let mut rng = rand::thread_rng();
 
+    // Pick the text and draw it
     let (text, x, y) = if rng.gen_bool(0.5) {
-        (
+    (
             format!("come back at {HOUR}:{MINUTE:0>2}"),
             rng.gen_range(8.0..194.0),
             rng.gen_range(25.0..248.0),
@@ -39,13 +42,17 @@ pub fn out_of_stock() -> Vec<u8> {
     canvas_to_png(dt).unwrap_or_else(|_| Vec::new())
 }
 
+/// Draws a cat, returning a PNG.
 pub fn purchase_cat() -> Vec<u8> {
     let mut rng = rand::thread_rng();
 
     let mut dt = DrawTarget::new(400, 256);
 
+    // Rotation is centered around zero degrees in a symmetric triangular
+    // distribution.
     let rotation = rng.gen_range(0.0..180.0) + rng.gen_range(0.0..180.0) - 180.0;
 
+    // Generate the transfrom (scale, rotate, translate) for the cat :cat2:
     let base_transform = Transform2D::identity()
         .then_scale(1.1 + rng.gen_range(-0.02..0.02), 1.1 + rng.gen_range(-0.02..0.02))
         .then_rotate(Angle::degrees(rotation))
@@ -56,9 +63,11 @@ pub fn purchase_cat() -> Vec<u8> {
 
     draw_cat(&mut dt, &base_transform);
 
+    // Return no data if there's an error
     canvas_to_png(dt).unwrap_or_else(|_| Vec::new())
 }
 
+/// Draws the head of the cat around `0, 0`.
 fn draw_head(dt: &mut DrawTarget) {
     let mut rng = rand::thread_rng();
 
@@ -133,6 +142,7 @@ fn draw_head(dt: &mut DrawTarget) {
     dt.fill(&nose, &BLACK, &DRAW);
 }
 
+/// Draws the cat around the base transform.
 fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
     let mut rng = rand::thread_rng();
 
@@ -144,12 +154,14 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
         let sign = if rng.gen::<bool>() { 1. } else { -1. };
 
         pb.move_to(x, y);
-        
+
+        // 5% chance for a straight line tail
         if rng.gen_ratio(1, 20) {
+            // Additional 10% chance for a very long straight tail
             let scale = if rng.gen_ratio(1, 10) { 5. }
                 else { 1. };
             pb.line_to(x + scale*rng.gen_range(40.0..70.0), y + scale*rng.gen_range(-30.0..30.0));
-        } else if rng.gen::<bool>() {
+        } else if rng.gen::<bool>() { // Otherwise, 50% chance for a cubic tail
             let scale = rng.gen_range(2.5..3.5);
 
             pb.cubic_to(
@@ -157,7 +169,7 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
                 x + scale*rng.gen_range(-5.0..0.0), y + scale*sign*rng.gen_range(10.0..15.0),
                 x + scale*rng.gen_range(15.0..25.0), y + scale*sign*rng.gen_range(5.0..15.0),
             );
-        } else {
+        } else { // And a 50% chance for a quadratic tail
             let scale = rng.gen_range(3.0..4.0);
 
             pb.quad_to(
@@ -238,6 +250,7 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
 
 
     // Colon three :3
+    // Maybe I'll add this back later
     // {
     //     let path = {
     //         let mut pb = PathBuilder::new();
@@ -287,6 +300,7 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
     // }
 }
 
+/// The default stroke style for shapes.
 fn stroke() -> &'static StrokeStyle {
     static STROKE: OnceLock<StrokeStyle> = OnceLock::new();
     STROKE.get_or_init(|| {
@@ -301,6 +315,7 @@ fn stroke() -> &'static StrokeStyle {
     })
 }
 
+/// The default stroke options for shapes.
 const BLACK: Source = Source::Solid(SolidSource {
     r: 0x0,
     g: 0x0,
@@ -308,12 +323,14 @@ const BLACK: Source = Source::Solid(SolidSource {
     a: 0xff,
 });
 
+/// The default draw options for shapes.
 const DRAW: DrawOptions = DrawOptions {
     blend_mode: BlendMode::SrcOver,
     alpha: 1.,
     antialias: AntialiasMode::Gray,
 };
 
+/// Generates a random (light) color.
 fn random_color<'a>() -> Source<'a> {
     let mut rng = rand::thread_rng();
     Source::Solid(SolidSource {
@@ -324,6 +341,10 @@ fn random_color<'a>() -> Source<'a> {
     })
 }
 
+/// Draws an ellipse on the given path.
+/// This is a generalization of the function called on [PathBuilder::arc], and
+/// will ideally be unnecessary when [the PR](https://github.com/jrmuizel/raqote/pull/207/)
+/// is dealt with.
 fn ellipse(pb: &mut PathBuilder, x: f32, y: f32, width: f32, height: f32) {
     let a: Arc<f32> = Arc {
         center: Point::new(x, y),
