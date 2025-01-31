@@ -251,56 +251,6 @@ fn draw_cat(dt: &mut DrawTarget, base: &Transform) {
     draw_head(dt);
     dt.set_transform(&base);
 
-
-    // Colon three :3
-    // Maybe I'll add this back later
-    // {
-    //     let path = {
-    //         let mut pb = PathBuilder::new();
-
-    //         let (x, y) = (100. + 0., 100. + 7.);
-    //         let (rx, ry) = (6., 6.);
-    
-    //         let a: Arc<f32> = Arc {
-    //             center: Point::new(x - rx, y),
-    //             radii: Vector::new(rx, ry),
-    //             start_angle: Angle::radians(-0.5/3. * PI),
-    //             sweep_angle: Angle::radians(4./3. * PI),
-    //             x_rotation: Angle::zero(),
-    //         };
-    //         a.for_each_quadratic_bezier(&mut |q| {
-    //             pb.quad_to(q.ctrl.x, q.ctrl.y, q.to.x, q.to.y);
-    //             pb.move_to(q.to.x, q.to.y);
-    //         });
-    //         pb.close();
-    
-    //         let a: Arc<f32> = Arc {
-    //             center: Point::new(x + rx, y),
-    //             radii: Vector::new(rx, ry),
-    //             start_angle: Angle::radians(-2.5/3. * PI),
-    //             sweep_angle: Angle::radians(-4./3. * PI),
-    //             x_rotation: Angle::zero(),
-    //         };
-    //         a.for_each_quadratic_bezier(&mut |q| {
-    //             pb.quad_to(q.ctrl.x, q.ctrl.y, q.to.x, q.to.y);
-    //             pb.move_to(q.to.x, q.to.y);
-    //         });
-    //         pb.close();
-
-    //         pb.finish()
-    //     };
-
-    //     let style = &StrokeStyle {
-    //         cap: LineCap::Round,
-    //         join: LineJoin::Miter,
-    //         width: 3.,
-    //         miter_limit: 2.,
-    //         dash_array: Vec::new(),
-    //         dash_offset: 0.,
-    //     };
-
-    //     dt.stroke(&path, &BLACK, &style, &DRAW);
-    // }
 }
 
 /// The default stroke style for shapes.
